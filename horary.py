@@ -1,7 +1,6 @@
 from flask import Flask
 import ephem
 from datetime import datetime
-import time
 
 app = Flask(__name__)
 
