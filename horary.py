@@ -1,42 +1,54 @@
-# 🕵️ ХОРАРНЫЙ УБИЙЦА - АСТРОЛОГИЧЕСКОЕ ЯДРО
+from flask import Flask, request, jsonify
 import ephem
 from datetime import datetime
 
-print("🔮 ХОРАРНЫЙ УБИЙЦА - РАБОЧАЯ СИСТЕМА\n")
+app = Flask(__name__)
 
-# Создаем астрологическую карту
-observer = ephem.Observer()
-observer.lat = '55.7558'
-observer.lon = '37.6173'
-observer.date = datetime.now()
+def calculate_horary(question_text, question_time):
+    """Твоя астрологическая логика"""
+    observer = ephem.Observer()
+    observer.lat = '55.7558'
+    observer.lon = '37.6173'
+    observer.date = question_time
+    
+    planets = {
+        'Солнце': ephem.Sun(),
+        'Луна': ephem.Moon(), 
+        'Меркурий': ephem.Mercury(),
+        'Венера': ephem.Venus(),
+        'Марс': ephem.Mars(),
+    }
+    
+    for planet in planets.values():
+        planet.compute(observer)
+    
+    # Астрологическая логика
+    moon_sign = ephem.constellation(planets['Луна'])[1]
+    if moon_sign in ['Libra', 'Taurus', 'Cancer']:
+        return "ДА", f"Луна в гармоничном знаке {moon_sign}"
+    else:
+        return "НЕТ", f"Луна в сложном положении ({moon_sign})"
 
-print("📍 Место: Москва")
-print(f"⏰ Время: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
+@app.route('/health')
+def health_check():
+    return "Хорарный Убийца активен!"
 
-# Расчет планет
-planets = {
-    'Солнце': ephem.Sun(),
-    'Луна': ephem.Moon(), 
-    'Меркурий': ephem.Mercury(),
-    'Венера': ephem.Venus(),
-    'Марс': ephem.Mars(),
-}
+@app.route('/horary', methods=['POST'])
+def horary_endpoint():
+    """Конечная точка для бота"""
+    data = request.json
+    question = data.get('question', '')
+    question_time = datetime.now()
+    
+    verdict, reasoning = calculate_horary(question, question_time)
+    
+    response = {
+        'verdict': verdict,
+        'reasoning': reasoning,
+        'time': question_time.isoformat()
+    }
+    
+    return jsonify(response)
 
-print("\n📊 ПОЗИЦИИ ПЛАНЕТ:")
-for name, planet in planets.items():
-    planet.compute(observer)
-    constellation = ephem.constellation(planet)[1]
-    print(f"   {name}: {constellation}")
-
-# Простая логика вердикта
-moon_sign = ephem.constellation(planets['Луна'])[1]
-if moon_sign in ['Libra', 'Taurus', 'Cancer']:
-    verdict = "ДА"
-    reason = f"Луна в гармоничном знаке {moon_sign}"
-else:
-    verdict = "НЕТ" 
-    reason = f"Луна в сложном положении ({moon_sign})"
-
-print(f"\n⚡ ВЕРДИКТ: {verdict}")
-print(f"📖 ОБОСНОВАНИЕ: {reason}")
-print(f"\n🚀 СИСТЕМА ГОТОВА К ИНТЕГРАЦИИ С БОТОМ")
+if name == '__main__':
+    app.run(host='0.0.0.0', port=5000)
