@@ -40,6 +40,55 @@ def detect_question_type(question):
 
 def get_detailed_analysis(question_text):
     try:
+        class HoraryBrain:
+    def __init__(self):
+        self.experience = 0
+        
+    def analyze_question_type(self, question):
+        question_lower = question.lower()
+        if any(word in question_lower for word in ['деньг', 'финанс', 'денег']):
+            return "ФИНАНСЫ", 2, "Венера"
+        elif any(word in question_lower for word in ['любит', 'скуч', 'отношен']):
+            return "ОТНОШЕНИЯ", 7, "Венера" 
+        elif any(word in question_lower for word in ['работ', 'карьер']):
+            return "КАРЬЕРА", 10, "Сатурн"
+        else:
+            return "ОБЩИЙ", 1, "Солнце"
+    
+    def make_decision(self, moon_sign, venus_sign, question_type):
+        # Простая логика принятия решений
+        good_signs = ['Телец', 'Рак', 'Весы', 'Стрелец']
+        
+        score = 0
+        if moon_sign in good_signs: score += 50
+        if venus_sign in good_signs: score += 30
+        if question_type == "ФИНАНСЫ": score += 20
+        
+        if score > 70:
+            return "ДА ✅", "Высокие шансы на успех!"
+        elif score > 40:
+            return "ВОЗМОЖНО 🤔", "Шансы есть, но нужны усилия"
+        else:
+            return "НЕТ ❌", "Сейчас не лучшее время"
+    
+    def generate_strategy(self, verdict, moon_sign, question_type):
+        strategies = {
+            "ФИНАНСЫ": {
+                "ДА ✅": f"Луна в {moon_sign} - идеальное время для финансовых операций!",
+                "ВОЗМОЖНО 🤔": f"При Луне в {moon_sign} действуйте осторожно, но настойчиво",
+                "НЕТ ❌": f"Луна в {moon_sign} советует отложить финансовые вопросы"
+            },
+            "ОТНОШЕНИЯ": {
+                "ДА ✅": f"Луна в {moon_sign} создает магию притяжения!",
+                "ВОЗМОЖНО 🤔": f"При Луне в {moon_sign} проявите терпение в отношениях", 
+                "НЕТ ❌": f"Луна в {moon_sign} - время для работы над собой"
+            }
+        }
+        
+        return strategies.get(question_type, {}).get(verdict, "Доверьтесь интуиции!")
+
+# СОЗДАЕМ МОЗГ БОТА
+bot_brain = HoraryBrain()
         # РЕАЛЬНОЕ время для показа
         real_time = datetime.now()
         display_time = real_time.strftime('%H:%M, %d.%m.%Y')
