@@ -165,7 +165,9 @@ def get_detailed_analysis(question_text):
         return f"❌ Ошибка анализа: {str(e)}"
 # [все твои функции здесь...]
 
-# ОБРАБОТКА ГРУПП ← НОВЫЙ КОД
+
+
+# ОБРАБОТКА ГРУПП
 @bot.message_handler(chat_types=['group', 'supergroup'])
 def handle_group_message(message):
     if message.text and ('@HoraryEmperorBot' in message.text):
@@ -174,10 +176,7 @@ def handle_group_message(message):
             analysis = get_detailed_analysis(question)
             bot.reply_to(message, analysis)
 
-# ЛИЧНЫЕ СООБЩЕНИЯ ← СТАРЫЙ КОД (оставить как есть)
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
-    if message.text.startswith('/'):
+# ЛИЧНЫЕ СООБЩЕНИЯ - ТОЛЬКО ОДНА ФУНКЦИЯ!
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     if message.text.startswith('/'):
@@ -185,8 +184,10 @@ def handle_message(message):
             bot.reply_to(message, "🔮 Я — УМНЫЙ Хорарный Император! Задай вопрос для глубокого анализа!")
         return
     
+    # Обработка обычных вопросов в личке
     analysis = get_detailed_analysis(message.text)
     bot.reply_to(message, analysis)
+  
 
 print("🔄 УМНЫЙ бот с ПРАВИЛЬНЫМ временем запущен...")
 while True:
