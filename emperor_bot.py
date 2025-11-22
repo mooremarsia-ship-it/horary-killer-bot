@@ -6,7 +6,7 @@ from datetime import datetime
 from horary_knowledge import detect_question_theme, get_planet_ruler
 
 # ЦИФРОВАЯ ДНК ТВОЕГО ИМПЕРАТОРА
-BOT_TOKEN = "7166686748:AAFnyfjq5UsunijP_p8HQiYeKHh3qoAM5RA"
+BOT_TOKEN = "7166686748:AAFnyfjq5UsunijP_p8HQiYeKHh3qoAM5RA"  # 🚨 Убедись, что это твой токен!
 ASTRO_SERVER = "https://horary-killer-bot.onrender.com"
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -79,10 +79,11 @@ def handle_message(message):
     
     # Игнорируем команды
     if message.text.startswith('/'):
-        bot.reply_to(message, "🔮 Задай свой вопрос Вселенной...")
+        if message.text == '/start':
+            bot.reply_to(message, "🔮 Я — Хорарный Император. Задай мне вопрос, и звезды дадут ответ...")
         return
     
-    # Проводим хорарный анализ
+    # Проводим хорарный анализ только для настоящих вопросов
     analysis = get_horary_analysis(message.text)
     bot.reply_to(message, analysis)
     print("Анализ отправлен!")
