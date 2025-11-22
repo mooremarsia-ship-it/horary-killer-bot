@@ -1,58 +1,17 @@
-import telebot
-import time
-import ephem
-from datetime import datetime
-
-BOT_TOKEN = "7166686748:AAFnyfjq5UsunijP_p8HQiYeKHh3qoAM5RA"
-bot = telebot.TeleBot(BOT_TOKEN)
-
-def get_russian_zodiac(eng_sign):
-    zodiac_map = {
-        'Aries': 'Овен', 'Taurus': 'Телец', 'Gemini': 'Близнецы',
-        'Cancer': 'Рак', 'Leo': 'Лев', 'Virgo': 'Дева',
-        'Libra': 'Весы', 'Scorpio': 'Скорпион', 'Sagittarius': 'Стрелец',
-        'Capricorn': 'Козерог', 'Aquarius': 'Водолей', 'Pisces': 'Рыбы'
-    }
-    return zodiac_map.get(eng_sign, eng_sign)
-
-def get_planet_ruler(zodiac_sign):
-    """Правильное определение управителей знаков"""
-    rulers = {
-        'Овен': 'Марс', 'Телец': 'Венера', 'Близнецы': 'Меркурий',
-        'Рак': 'Луна', 'Лев': 'Солнце', 'Дева': 'Меркурий',
-        'Весы': 'Венера', 'Скорпион': 'Плутон', 'Стрелец': 'Юпитер',
-        'Козерог': 'Сатурн', 'Водолей': 'Уран', 'Рыбы': 'Нептун'
-    }
-    return rulers.get(zodiac_sign, 'Венера')
-
-def get_zodiac_sign(planet, observer):
-    """Получение знака планеты БЕЗ Ophiuchus"""
-    try:
-        planet.compute(observer)
-        constellation = ephem.constellation(planet)[1]
-        # Фильтруем только зодиакальные созвездия
-        zodiac_constellations = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                               'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
-        
-        if constellation in zodiac_constellations:
-            return get_russian_zodiac(constellation)
-        else:
-            # Если не зодиакальное созвездие, используем предыдущее вычисление
-            return get_russian_zodiac(constellation)
-    except:
-        return "Не определен"
-
 def get_detailed_analysis(question_text):
-    """Детальный анализ с правильными управителями"""
     try:
-        current_time = datetime.now()
+        # РЕАЛЬНОЕ время для отображения
+        from datetime import datetime
+        real_time = datetime.now()
+        display_time = real_time.strftime('%H:%M, %d.%m.%Y')
         
+        # Время для астрономических расчетов (оставляем как было)
         observer = ephem.Observer()
         observer.lat = '55.7558'
         observer.lon = '37.6173'  
-        observer.date = current_time
+        observer.date = real_time  # используем реальное время для расчетов
         
-        # Расчет планет
+        # Остальной код без изменений...
         moon = ephem.Moon()
         sun = ephem.Sun()
         mars = ephem.Mars()
@@ -67,21 +26,18 @@ def get_detailed_analysis(question_text):
         mercury.compute(observer)
         jupiter.compute(observer)
         
-        # Получаем знаки БЕЗ Ophiuchus
-        moon_sign = get_zodiac_sign(moon, observer)
-        sun_sign = get_zodiac_sign(sun, observer)
-        mars_sign = get_zodiac_sign(mars, observer)
-        venus_sign = get_zodiac_sign(venus, observer)
-        mercury_sign = get_zodiac_sign(mercury, observer)
-        jupiter_sign = get_zodiac_sign(jupiter, observer)
+        moon_sign = get_russian_zodiac(ephem.constellation(moon)[1])
+        sun_sign = get_russian_zodiac(ephem.constellation(sun)[1])
+        mars_sign = get_russian_zodiac(ephem.constellation(mars)[1])
+        venus_sign = get_russian_zodiac(ephem.constellation(venus)[1])
+        mercury_sign = get_russian_zodiac(ephem.constellation(mercury)[1])
+        jupiter_sign = get_russian_zodiac(ephem.constellation(jupiter)[1])
         
-        # Правильные управители
         moon_ruler = get_planet_ruler(moon_sign)
         sun_ruler = get_planet_ruler(sun_sign)
         mars_ruler = get_planet_ruler(mars_sign)
         venus_ruler = get_planet_ruler(venus_sign)
         
-        # Детальный вердикт
         favorable_signs = ['Телец', 'Рак', 'Весы', 'Стрелец', 'Рыбы']
         
         if moon_sign in favorable_signs and venus_sign in favorable_signs:
@@ -97,10 +53,9 @@ def get_detailed_analysis(question_text):
             reason = f"Луна в {moon_sign} указывает на временные затруднения"
             advice = "Проявите терпение - лучшее время еще впереди"
         
-        # Развернутый анализ
         analysis = f"""
 🔮 ДЕТАЛЬНЫЙ ХОРАРНЫЙ АНАЛИЗ
-⏰ {current_time.strftime('%H:%M, %d.%m.%Y')}, МОСКВА
+⏰ {display_time}, МОСКВА
 
 ❓ ВОПРОС: {question_text}
 
@@ -126,21 +81,3 @@ def get_detailed_analysis(question_text):
         
     except Exception as e:
         return f"❌ Ошибка анализа: {str(e)}"
-
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
-    if message.text.startswith('/'):
-        if message.text == '/start':
-            bot.reply_to(message, "🔮 Я — Хорарный Император. Задай вопрос для детального астрологического анализа!")
-        return
-    
-    analysis = get_detailed_analysis(message.text)
-    bot.reply_to(message, analysis)
-
-print("🔄 Улучшенный бот запущен...")
-while True:
-    try:
-        bot.polling(none_stop=True, interval=1)
-    except Exception as e:
-        print(f"Ошибка: {e}")
-        time.sleep(5)
