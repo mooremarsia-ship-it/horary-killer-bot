@@ -16,30 +16,34 @@ HOUSE_MEANINGS = {
 }
 
 PLANET_RULERS = {
-    'Aries': 'Mars',
-    'Taurus': 'Venus', 
-    'Gemini': 'Mercury',
-    'Cancer': 'Moon',
-    'Leo': 'Sun',
-    'Virgo': 'Mercury',
-    'Libra': 'Venus',
-    'Scorpio': 'Pluto',
-    'Sagittarius': 'Jupiter',
-    'Capricorn': 'Saturn',
-    'Aquarius': 'Uranus',
-    'Pisces': 'Neptune'
+    'Aries': 'Марс',
+    'Taurus': 'Венера', 
+    'Gemini': 'Меркурий',
+    'Cancer': 'Луна',
+    'Leo': 'Солнце',
+    'Virgo': 'Меркурий',
+    'Libra': 'Венера',
+    'Scorpio': 'Плутон',
+    'Sagittarius': 'Юпитер',
+    'Capricorn': 'Сатурн',
+    'Aquarius': 'Уран',
+    'Pisces': 'Нептун'
 }
 
 QUESTION_THEMES = {
-    'любовь': 7,
+    'любов': 7,
     'отношен': 7,
     'брак': 7,
     'партнер': 7,
+    'встреч': 7,
+    'семья': 4,
     'деньги': 2,
     'финанс': 2,
-    'работа': 6, 
+    'долг': 2,
+    'работа': 6,
     'карьер': 10,
     'начальник': 10,
+    'зарплат': 2,
     'дом': 4,
     'недвижимость': 4,
     'переезд': 3,
@@ -57,3 +61,7 @@ def detect_question_theme(question_text):
         if keyword in question_lower:
             return house, HOUSE_MEANINGS[house]
     return 1, HOUSE_MEANINGS[1]  # По умолчанию 1-й дом
+
+def get_planet_ruler(sign_name):
+    """Возвращает управителя знака на русском"""
+    return PLANET_RULERS.get(sign_name, 'Не определен')
