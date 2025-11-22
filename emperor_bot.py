@@ -163,7 +163,21 @@ def get_detailed_analysis(question_text):
         
     except Exception as e:
         return f"❌ Ошибка анализа: {str(e)}"
+# [все твои функции здесь...]
 
+# ОБРАБОТКА ГРУПП ← НОВЫЙ КОД
+@bot.message_handler(chat_types=['group', 'supergroup'])
+def handle_group_message(message):
+    if message.text and ('@HoraryEmperorBot' in message.text):
+        question = message.text.replace('@HoraryEmperorBot', '').strip()
+        if question:
+            analysis = get_detailed_analysis(question)
+            bot.reply_to(message, analysis)
+
+# ЛИЧНЫЕ СООБЩЕНИЯ ← СТАРЫЙ КОД (оставить как есть)
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    if message.text.startswith('/'):
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     if message.text.startswith('/'):
