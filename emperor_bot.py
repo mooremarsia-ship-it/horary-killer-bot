@@ -553,6 +553,82 @@ def get_moscow_time():
 # Создаем экземпляр аналитика
 analyst = UniversalAstroAnalyst()
 
-# Обработчики сообщений (остаются аналогично предыдущим, но с вызовом analyst.generate_universal_analysis)
+# ===== ОБРАБОТЧИКИ СООБЩЕНИЙ =====
 
-print("🔄 УНИВЕРСАЛЬНЫЙ АСТРОЛОГИЧЕСКИЙ АНАЛИТИК запущен...")
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    """Обработчик команд start и help"""
+    chat_type = "private" if message.chat.type == "private" else "group"
+    verdict, analysis, strategy = analyst._get_greeting_response("Рак", "Лев", chat_type)
+    
+    if chat_type == "private":
+        bot.reply_to(message, analysis, parse_mode='Markdown')
+    else:
+        markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add('💬 Публичный вопрос', '🔒 Личный вопрос')
+        bot.send_message(
+            message.chat.id,
+            analysis,
+            reply_markup=markup,
+            parse_mode='Markdown'
+        )
+
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    """Обработчик всех сообщений"""
+    try:
+        user_id = message.from_user.id
+        text = message.text.strip()
+        chat_type = "private" if message.chat.type == "private" else "group"
+        
+        # Обработка личных сообщений в группе
+        if chat_type == "group" and text.lower().startswith(('личное', 'приватно', 'конфиденциально')):
+            question = text[7:].strip() if text.lower().startswith('личное') else text
+            if len(question) < 3:
+                bot.reply_to(message, "🔒 *Напишите вопрос после 'Личное'*\n\n*Пример:* Личное Любит ли меня муж?", parse_mode='Markdown')
+                return
+            
+            # Отправляем анализ в ЛС
+            try:
+                verdict, analysis, strategy = analyst.generate_universal_analysis(question, user_id, "private")
+                full_response = f"{verdict} {analysis}\n\n*🎯 СТРАТЕГИЯ:*\n{strategy}"
+                bot.send_message(user_id, full_response, parse_mode='Markdown')
+                bot.reply_to(message, "✅ *Ответ отправлен в личные сообщения!*", parse_mode='Markdown')
+            except Exception as e:
+                bot.reply_to(message, "❌ *Не могу отправить ЛС. Напишите мне сначала в личные сообщения:* @HoraryEmperorBot", parse_mode='Markdown')
+            return
+        
+        # Обычные вопросы в группе
+        if chat_type == "group":
+            if text.lower() in ['💬 публичный вопрос', 'публичный вопрос']:
+                bot.reply_to(message, "💬 *Задайте ваш вопрос прямо здесь!*", parse_mode='Markdown')
+                return
+            elif text.lower() in ['🔒 личный вопрос', 'личный вопрос']:
+                bot.reply_to(message, "🔒 *Напишите:* Личное [ваш вопрос]\n\n*Пример:* Личное Будет ли у меня повышение?", parse_mode='Markdown')
+                return
+        
+        # Генерация анализа для любого вопроса
+        if len(text) > 2:
+            # Показываем "печатает"
+            bot.send_chat_action(message.chat.id, 'typing')
+            
+            # Генерируем анализ
+            verdict, analysis, strategy = analyst.generate_universal_analysis(text, user_id, chat_type)
+            
+            # Формируем полный ответ
+            full_response = f"{verdict} {analysis}\n\n*🎯 СТРАТЕГИЯ:*\n{strategy}"
+            
+            # Отправляем ответ
+            if chat_type == "private":
+                bot.send_message(message.chat.id, full_response, parse_mode='Markdown')
+            else:
+                bot.reply_to(message, full_response, parse_mode='Markdown')
+        
+        else:
+            if chat_type == "private":
+                bot.reply_to(message, "💫 *Задайте вопрос для глубинного анализа!*\n\n*Примеры:*\n• Любит ли меня Михаил?\n• Когда придут деньги?\n• Какое мое предназначение?", parse_mode='Markdown')
+            else:
+                bot.reply_to(message, "💫 *Задайте вопрос для анализа!*", parse_mode='Markdown')
+                
+    except Exception as e:
+        error_msg = f"❌
