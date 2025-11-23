@@ -320,26 +320,6 @@ def handle_group_message(message):
                 
     except Exception as e:
         print(f"Ошибка в группе: {e}")
-            # УМНЫЕ ТРИГГЕРЫ ДЛЯ ГРУПП
-            if '@HoraryEmperorBot' in message.text:
-                question = message.text.replace('@HoraryEmperorBot', '').strip()
-            elif any(word in message.text.lower() for word in ['император', 'бот', 'анализ', 'гороскоп', 'судьба']):
-                question = message.text.strip()
-            elif '?' in message.text:
-                question = message.text.strip()
-            
-            if question and len(question) > 5:  # Только вопросы длиннее 5 симвонов
-                # ПРОПУСКАЕМ ПРОСТЫЕ ОБРАЩЕНИЯ
-                if question.lower().strip() in ['император', 'бот', 'привет']:
-                    bot.reply_to(message, "👑 Я здесь! Задай вопрос о своей жизни!")
-                    return
-                
-                # ДЕЛАЕМ АНАЛИЗ
-                analysis = get_detailed_analysis(question)
-                bot.reply_to(message, analysis)
-                
-    except Exception as e:
-        print(f"Ошибка в группе: {e}")
 
 # ЛИЧНЫЕ СООБЩЕНИЯ
 @bot.message_handler(func=lambda message: True)
