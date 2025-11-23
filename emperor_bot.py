@@ -1,78 +1,71 @@
-def get_detailed_analysis(question_text):
+import telebot
+import time
+import ephem
+from datetime import datetime, timedelta
+
+BOT_TOKEN = "7166686748:AAFnyfjq5UsunijP_p8HQiYeKHh3qoAM5RA"
+bot = telebot.TeleBot(BOT_TOKEN)
+
+def get_moscow_time():
+    utc_time = datetime.utcnow()
+    moscow_time = utc_time + timedelta(hours=3)
+    return moscow_time.strftime('%H:%M, %d.%m.%Y')
+
+def get_russian_zodiac(eng_sign):
+    zodiac_map = {
+        'Aries': 'Овен', 'Taurus': 'Телец', 'Gemini': 'Близнецы',
+        'Cancer': 'Рак', 'Leo': 'Лев', 'Virgo': 'Дева',
+        'Libra': 'Весы', 'Scorpio': 'Скорпион', 'Sagittarius': 'Стрелец',
+        'Capricorn': 'Козерог', 'Aquarius': 'Водолей', 'Pisces': 'Рыбы'
+    }
+    return zodiac_map.get(eng_sign, eng_sign)
+
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    if message.text.startswith('/'):
+        if message.text == '/start':
+            bot.reply_to(message, "🔮 Я — Хорарный Император! Задай вопрос!")
+        return
+    
     try:
-        # ПРАВИЛЬНОЕ время!
         display_time = get_moscow_time()
         
         observer = ephem.Observer()
         observer.lat = '55.7558'
         observer.lon = '37.6173'
         
-        # Расчет всех планет
-        planets = {
-            'Луна': ephem.Moon(),
-            'Солнце': ephem.Sun(),
-            'Венера': ephem.Venus(),
-            'Марс': ephem.Mars(),
-            'Меркурий': ephem.Mercury(),
-            'Юпитер': ephem.Jupiter(),
-            'Сатурн': ephem.Saturn()
-        }
+        moon = ephem.Moon()
+        sun = ephem.Sun()
+        moon.compute(observer)
+        sun.compute(observer)
         
-        for name, planet in planets.items():
-            planet.compute(observer)
+        moon_sign = get_russian_zodiac(ephem.constellation(moon)[1])
+        sun_sign = get_russian_zodiac(ephem.constellation(sun)[1])
         
-        # Получаем знаки с исправлением Ophiuchus
-        moon_sign = get_zodiac_sign(planets['Луна'])
-        sun_sign = get_zodiac_sign(planets['Солнце'])
-        venus_sign = get_zodiac_sign(planets['Венера'])
-        mars_sign = get_zodiac_sign(planets['Марс'])
-        mercury_sign = get_zodiac_sign(planets['Меркурий'])
-        jupiter_sign = get_zodiac_sign(planets['Юпитер'])
-        saturn_sign = get_zodiac_sign(planets['Сатурн'])
-        
-        # Правильные управители
-        moon_ruler = get_planet_ruler(moon_sign)
-        sun_ruler = get_planet_ruler(sun_sign)
-        venus_ruler = get_planet_ruler(venus_sign)
-        mars_ruler = get_planet_ruler(mars_sign)
-        
-        # ИСПОЛЬЗУЕМ МОЗГ БОТА! 🧠
-        question_type, house, significator = bot_brain.analyze_question_type(question_text)
-        verdict, reasoning = bot_brain.make_decision(moon_sign, venus_sign, question_type)
-        strategy = bot_brain.generate_strategy(verdict, moon_sign, question_type)
-        
-        # ДЕТАЛЬНЫЙ АНАЛИЗ
-        advice_text = "благоприятствует вашим намерениям" if "ДА" in verdict else "требует осторожного подхода" if "НЕТ" in verdict else "оставляет пространство для маневра"
-        
-        analysis = f"""
-🔮 УМНЫЙ ХОРАРНЫЙ АНАЛИЗ
+        response = f"""
+🔮 ХОРАРНЫЙ АНАЛИЗ
 ⏰ {display_time}, МОСКВА
 
-❓ ВОПРОС: {question_text}
-🎯 ТИП: {question_type} ({house}-й дом)
-⚖️ СИГНИФИКАТОР: {significator}
+❓ ВОПРОС: {message.text}
 
-📊 ДЕТАЛЬНАЯ КАРТА:
+📊 КАРТА:
+• 🌙 Луна: {moon_sign}
+• ☀️ Солнце: {sun_sign}
 
-• 🌙 Луна: {moon_sign} (упр. {moon_ruler}) - эмоциональный фон
-• ☀️ Солнце: {sun_sign} (упр. {sun_ruler}) - воля и цель
-• ♀️ Венера: {venus_sign} (упр. {venus_ruler}) - любовь и деньги
-• ♂️ Марс: {mars_sign} (упр. {mars_ruler}) - энергия действий
-• ☿ Меркурий: {mercury_sign} - коммуникация
-• ♃ Юпитер: {jupiter_sign} - удача и расширение
-• ♄ Сатурн: {saturn_sign} - ограничения и карма
+⚡ ВЕРДИКТ: ДА ✅
+📖 Луна в {moon_sign} благоприятствует
 
-⚡ ВЕРДИКТ: {verdict}
-💡 ОБОСНОВАНИЕ: {reasoning}
-
-🎪 СТРАТЕГИЯ: {strategy}
-
-🌟 АСТРОЛОГИЧЕСКИЙ СОВЕТ:
-Текущая конфигурация планет {advice_text}. Обратите особое внимание на положение {moon_sign} для эмоционального состояния и {venus_sign} для гармонии.
-
-🤖 Уровень анализа: {bot_brain.experience + 1}
+💫 Действуйте уверенно!
 """
-        return analysis
+        bot.reply_to(message, response)
         
     except Exception as e:
-        return f"❌ Ошибка анализа: {str(e)}"
+        bot.reply_to(message, f"❌ Ошибка: {str(e)}")
+
+print("🔄 Бот запущен...")
+while True:
+    try:
+        bot.polling(none_stop=True, interval=1)
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        time.sleep(5)
