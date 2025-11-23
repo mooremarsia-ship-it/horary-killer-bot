@@ -1,13 +1,147 @@
-class DeepPsychologicalAnalyzer:
+import telebot
+import time
+import ephem
+import random
+import threading
+from datetime import datetime, timedelta, timezone
+from flask import Flask
+
+# Создаем Flask приложение для здоровья
+app = Flask(__name__)
+
+@app.route('/')
+def health_check():
+    return "🔄 Хорарный Император работает!", 200
+
+# Запускаем Flask в отдельном потоке
+def run_flask():
+    app.run(host='0.0.0.0', port=5000, debug=False)
+
+# Запускаем HTTP-сервер в фоне
+flask_thread = threading.Thread(target=run_flask, daemon=True)
+flask_thread.start()
+
+BOT_TOKEN = "7166686748:AAFnyfjq5UsunijP_p8HQiYeKHh3qoAM5RA"
+bot = telebot.TeleBot(BOT_TOKEN)
+
+class RealityChecker:
     def __init__(self):
-        self.archetypes = {
-            'warrior': ['Овен', 'Марс', 'сила', 'победа', 'борьба'],
-            'lover': ['Телец', 'Венера', 'красота', 'гармония', 'чувства'],
-            'magician': ['Близнецы', 'Меркурий', 'знание', 'коммуникация', 'магия'],
-            'sovereign': ['Лев', 'Солнце', 'власть', 'творчество', 'император']
+        self.absurd_patterns = {
+            'время': ['сколько времени', 'который час', 'когда сейчас'],
+            'погода': ['выйдет солнце', 'будет дождь', 'какая погода'],
+            'магия': ['получу миллион', 'подарят квартиру', 'выиграю в лотерею'],
+            'невозможное': ['сегодня замуж', 'завтра рожу', 'стану богатым за день']
         }
     
-    def generate_deep_analysis(self, question, moon_sign, sun_sign, question_type):
+    def check_reality(self, question):
+        """Проверяем вопрос на реалистичность"""
+        question_lower = question.lower()
+        
+        # 1. ПРОВЕРКА НА РЕАЛИЗМ
+        if self._check_timeframe(question_lower):
+            return False, "⏰ Вопрос нарушает временные рамки. Хорар анализирует обозримое будущее, а не мгновенные чудеса."
+        
+        # 2. ПРОВЕРКА НА КОНКРЕТИКУ
+        if not self._has_specifics(question_lower):
+            return False, "🎯 Уточните вопрос: кто, что, когда, какие сроки? Без конкретики анализ невозможен."
+        
+        # 3. ПРОВЕРКА НА ПАССИВНОСТЬ  
+        if self._is_too_passive(question_lower):
+            return False, "🚫 Вопрос исходит из позиции 'мне должны'. Переформулируйте в контексте ваших действий."
+        
+        # 4. ПРОВЕРКА НА МАСШТАБ
+        if self._violates_scale(question_lower):
+            return False, "💫 Вопрос противоречит базовым жизненным процессам. Хорар - не волшебная палочка."
+        
+        return True, "Вопрос легитимен"
+    
+    def _check_timeframe(self, question):
+        """Проверяет нарушение временных рамок"""
+        urgent_indicators = ['сегодня', 'завтра', 'сейчас', 'немедленно', 'срочно']
+        big_changes = ['замуж', 'разведусь', 'рожу', 'умру', 'стану богатым', 'получу миллион']
+        
+        has_urgency = any(word in question for word in urgent_indicators)
+        has_big_change = any(word in question for word in big_changes)
+        
+        return has_urgency and has_big_change
+    
+    def _has_specifics(self, question):
+        """Проверяет наличие конкретики"""
+        # Более мягкая проверка - разрешаем вопросы о потенциале и возможностях
+        potential_indicators = ['потенциал', 'возможно', 'стоит ли', 'смогу ли', 'буду ли']
+        has_potential = any(word in question for word in potential_indicators)
+        
+        specifics = ['кто', 'что', 'когда', 'какой', 'какая', 'сколько', 'где']
+        has_some_specifics = any(word in question for word in specifics)
+        
+        action_verbs = ['вернут', 'получу', 'встречу', 'устроюсь', 'куплю', 'продам']
+        has_actions = any(verb in question for verb in action_verbs)
+        
+        return has_some_specifics or has_actions or has_potential
+    
+    def _is_too_passive(self, question):
+        """Проверяет пассивную позицию"""
+        passive_patterns = [
+            'подарят мне', 'достанется мне', 'упадет с неба', 
+            'выиграю без', 'получу просто так', 'мне должны'
+        ]
+        return any(pattern in question for pattern in passive_patterns)
+    
+    def _violates_scale(self, question):
+        """Проверяет нарушение масштаба реальности"""
+        unrealistic = [
+            'подарят квартиру', 'получу миллион', 'стану знаменитым',
+            'встречу принца', 'найду клад', 'перееду в другую страну'
+        ]
+        urgent = ['сегодня', 'завтра', 'на неделе']
+        
+        has_unrealistic = any(word in question for word in unrealistic)
+        has_urgent = any(word in question for word in urgent)
+        
+        return has_unrealistic and has_urgent
+    
+    def suggest_better_question(self, original_question):
+        """Предлагает улучшенную формулировку с учетом контекста"""
+        question_lower = original_question.lower()
+        
+        if any(word in question_lower for word in ['замуж', 'женить', 'брак', 'отношен']):
+            return "«Есть ли у меня потенциал для серьезных отношений с [имя] в ближайшие 3 месяца?»"
+        
+        elif any(word in question_lower for word in ['деньг', 'финанс', 'денег', 'миллион']):
+            return "«Получу ли я ожидаемые деньги [зарплата/долг/премия] до [конкретная дата]?»"
+        
+        elif any(word in question_lower for word in ['работ', 'карьер', 'должност']):
+            return "«Устроюсь ли я на работу [название] в течение месяца?»"
+        
+        else:
+            templates = [
+                "«Вернут ли мне [что] до [когда]?»",
+                "«Встречу ли я [кого] на [мероприятие]?»", 
+                "«Стоит ли мне [действие] в течение [срок]?»",
+                "«Есть ли у меня потенциал для [цель] в ближайшее время?»"
+            ]
+            return random.choice(templates)
+
+class SmartAnalyzer:
+    def __init__(self):
+        self.experience = 0
+    
+    def analyze_question_type(self, question):
+        question_lower = question.lower()
+        if any(word in question_lower for word in ['деньг', 'финанс', 'денег', 'рубл', 'евро', 'доллар']):
+            return "ФИНАНСЫ", "💰"
+        elif any(word in question_lower for word in ['любит', 'скуч', 'отношен', 'брак', 'замуж', 'встреч', 'парень', 'мужчин']):
+            return "ОТНОШЕНИЯ", "💖" 
+        elif any(word in question_lower for word in ['работ', 'карьер', 'должност', 'бизнес', 'проект']):
+            return "КАРЬЕРА", "🚀"
+        elif any(word in question_lower for word in ['здоров', 'болез', 'лечен', 'врач', 'больниц']):
+            return "ЗДОРОВЬЕ", "🏥"
+        elif any(word in question_lower for word in ['поезд', 'путешеств', 'переезд', 'отпуск']):
+            return "ПУТЕШЕСТВИЯ", "✈️"
+        else:
+            return "ОБЩИЙ", "🔮"
+    
+    def generate_smart_response(self, question, moon_sign, sun_sign, question_type):
         """УМНЫЙ анализ в зависимости от типа вопроса"""
         
         question_lower = question.lower()
@@ -19,7 +153,7 @@ class DeepPsychologicalAnalyzer:
         elif any(word in question_lower for word in ['время', 'который час', 'сколько времени']):
             return self._get_time_response(moon_sign, sun_sign)
         
-        elif any(word in question_lower for word in ['привет', 'здравствуй', 'hello', 'hi']):
+        elif any(word in question_lower for word in ['привет', 'здравствуй', 'hello', 'hi', 'начать']):
             return self._get_greeting_response(moon_sign, sun_sign)
         
         # РАЗНЫЕ ТИПЫ ВОПРОСОВ - РАЗНЫЕ ОТВЕТЫ
@@ -184,7 +318,7 @@ class DeepPsychologicalAnalyzer:
             f"""Путешествие расширяет сознание.
 Твоя {moon_sign}-энергия жаждет новых горизонтов.""",
 
-            f"""Дорога teaches большему, чем цель.
+            f"""Дорога учит большему, чем цель.
 Наслаждайся процессом, а не только результатом."""
         ]
         
@@ -257,3 +391,187 @@ class DeepPsychologicalAnalyzer:
         analysis = f"{base_reason} {random.choice(insights)}"
         strategy = random.choice(strategies)
         return verdict, analysis, strategy
+
+# Создаем экземпляры классов
+reality_checker = RealityChecker()
+smart_analyzer = SmartAnalyzer()
+
+def get_moscow_time():
+    # ИСПРАВЛЕННАЯ ВЕРСИЯ - без deprecated функции
+    utc_time = datetime.now(timezone.utc)
+    moscow_time = utc_time + timedelta(hours=3)
+    return moscow_time.strftime('%H:%M, %d.%m.%Y')
+
+def get_russian_zodiac(eng_sign):
+    zodiac_map = {
+        'Aries': 'Овен', 'Taurus': 'Телец', 'Gemini': 'Близнецы',
+        'Cancer': 'Рак', 'Leo': 'Лев', 'Virgo': 'Дева',
+        'Libra': 'Весы', 'Scorpio': 'Скорпион', 'Sagittarius': 'Стрелец',
+        'Capricorn': 'Козерог', 'Aquarius': 'Водолей', 'Pisces': 'Рыбы'
+    }
+    return zodiac_map.get(eng_sign, eng_sign)
+
+# ОБРАБОТКА ГРУПП
+@bot.message_handler(chat_types=['supergroup', 'group'])
+def handle_group_message(message):
+    try:
+        if message.text:
+            question = None
+            
+            # РАЗНЫЕ ВАРИАНТЫ ОБРАЩЕНИЙ
+            if '@HoraryEmperorBot' in message.text:
+                question = message.text.replace('@HoraryEmperorBot', '').strip()
+            elif 'Император' in message.text:
+                question = message.text.replace('Император', '').strip()
+            elif 'император' in message.text.lower():
+                question = message.text.lower().replace('император', '').strip()
+            
+            if question and len(question) > 2:
+                # ПРОВЕРЯЕМ ЛЕГИТИМНОСТЬ
+                is_legitimate, legitimacy_message = reality_checker.check_reality(question)
+                
+                if not is_legitimate:
+                    bot.reply_to(message, legitimacy_message)
+                    return
+                
+                # ЕСЛИ ВОПРОС ЛЕГИТИМЕН - АНАЛИЗ
+                analysis = get_detailed_analysis(question)
+                bot.reply_to(message, analysis)
+    except Exception as e:
+        print(f"Ошибка в группе: {e}")
+
+# ЛИЧНЫЕ СООБЩЕНИЯ
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    if message.text.startswith('/'):
+        if message.text == '/start':
+            start_text = """
+🔮 Я — ХОРАРНЫЙ ИМПЕРАТОР с УМНЫМ АНАЛИЗОМ!
+
+Я понимаю разные типы вопросов:
+• 💖 Отношения и чувства
+• 💰 Финансы и деньги  
+• 🚀 Карьера и работа
+• 🏥 Здоровье и самочувствие
+• ✈️ Путешествия и поездки
+• 🌟 Общие вопросы
+
+Задай вопрос - и получи мудрый совет на основе звездных карт!"""
+            bot.reply_to(message, start_text)
+        return
+    
+    try:
+        # ПРОВЕРЯЕМ ЛЕГИТИМНОСТЬ ВОПРОСА
+        is_legitimate, legitimacy_message = reality_checker.check_reality(message.text)
+        
+        if not is_legitimate:
+            bot.reply_to(message, legitimacy_message)
+            return
+        
+        # ЕСЛИ ВОПРОС ЛЕГИТИМЕН - ДЕЛАЕМ УМНЫЙ АНАЛИЗ
+        display_time = get_moscow_time()
+        
+        observer = ephem.Observer()
+        observer.lat = '55.7558'
+        observer.lon = '37.6173'
+        
+        moon = ephem.Moon()
+        sun = ephem.Sun()
+        moon.compute(observer)
+        sun.compute(observer)
+        
+        moon_sign = get_russian_zodiac(ephem.constellation(moon)[1])
+        sun_sign = get_russian_zodiac(ephem.constellation(sun)[1])
+        
+        question_type, emoji = smart_analyzer.analyze_question_type(message.text)
+        
+        # УМНЫЙ АНАЛИЗ
+        verdict, analysis, strategy = smart_analyzer.generate_smart_response(
+            message.text, moon_sign, sun_sign, question_type
+        )
+        
+        response = f"""
+🔮 УМНЫЙ ХОРАРНЫЙ АНАЛИЗ
+⏰ {display_time}, МОСКВА
+
+❓ ВОПРОС: {message.text}
+🎯 ТИП: {question_type} {emoji}
+
+📊 КАРТА:
+• 🌙 Луна: {moon_sign}
+• ☀️ Солнце: {sun_sign}
+
+⚡ ВЕРДИКТ: {verdict}
+
+💫 АНАЛИЗ:
+{analysis}
+
+🎯 СТРАТЕГИЯ:
+{strategy}
+
+✨ Уровень анализа: {smart_analyzer.experience + 1}
+"""
+        bot.reply_to(message, response)
+        smart_analyzer.experience += 1
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Ошибка анализа: {str(e)}")
+
+def get_detailed_analysis(question):
+    """Функция для анализа в группах"""
+    display_time = get_moscow_time()
+    
+    observer = ephem.Observer()
+    observer.lat = '55.7558'
+    observer.lon = '37.6173'
+    
+    moon = ephem.Moon()
+    sun = ephem.Sun()
+    moon.compute(observer)
+    sun.compute(observer)
+    
+    moon_sign = get_russian_zodiac(ephem.constellation(moon)[1])
+    sun_sign = get_russian_zodiac(ephem.constellation(sun)[1])
+    
+    question_type, emoji = smart_analyzer.analyze_question_type(question)
+    
+    # УМНЫЙ АНАЛИЗ ДЛЯ ГРУПП
+    verdict, analysis, strategy = smart_analyzer.generate_smart_response(
+        question, moon_sign, sun_sign, question_type
+    )
+    
+    return f"""
+🔮 АНАЛИЗ ОТ ИМПЕРАТОРА
+⏰ {display_time}
+
+❓ ВОПРОС: {question}
+🎯 ТИП: {question_type} {emoji}
+
+📊 КАРТА:
+• 🌙 Луна: {moon_sign}
+• ☀️ Солнце: {sun_sign}
+
+⚡ ВЕРДИКТ: {verdict}
+
+💫 АНАЛИЗ:
+{analysis}
+
+🎯 СТРАТЕГИЯ:
+{strategy}
+
+✨ @HoraryEmperorBot
+"""
+
+print("🔄 ХОРАРНЫЙ ИМПЕРАТОР с УМНЫМ АНАЛИЗОМ запущен...")
+print("🌐 HTTP-сервер здоровья работает на порту 5000")
+
+# Запускаем бота с обработкой ошибок
+while True:
+    try:
+        print("🔗 Подключаемся к Telegram...")
+        bot.remove_webhook()
+        bot.polling(none_stop=True, timeout=60)
+    except Exception as e:
+        print(f"❌ Ошибка подключения: {e}")
+        print("🔄 Переподключаемся через 10 секунд...")
+        time.sleep(10)
