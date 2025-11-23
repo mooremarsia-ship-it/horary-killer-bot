@@ -1,3 +1,11 @@
+import telebot
+import time
+import ephem
+from datetime import datetime, timedelta
+
+BOT_TOKEN = "7166686748:AAFnyfjq5UsunijP_p8HQiYeKHh3qoAM5RA"
+bot = telebot.TeleBot(BOT_TOKEN)
+
 class RealityChecker:
     def __init__(self):
         self.absurd_patterns = {
@@ -87,7 +95,6 @@ class RealityChecker:
         else:
             return "Сформулируйте вопрос конкретнее: с указанием людей, сроков и ваших действий."
 
-# Добавляем в класс HoraryBrain
 class HoraryBrain:
     def __init__(self):
         self.experience = 0
@@ -99,7 +106,184 @@ class HoraryBrain:
         
         if not is_valid:
             suggestion = self.reality_checker.suggest_better_question(question)
-            full_message = f"{message}\n\n💡 Попробуйте так: «{suggestion}»"
+            full_message = f"🛡️ ДЕТЕКТОР РЕАЛЬНОСТИ\n\n{message}\n\n💡 Попробуйте так: «{suggestion}»"
             return False, full_message
         
         return True, "Вопрос принят к анализу"
+    
+    def analyze_question_type(self, question):
+        question_lower = question.lower()
+        if any(word in question_lower for word in ['деньг', 'финанс', 'денег']):
+            return "ФИНАНСЫ", "💰"
+        elif any(word in question_lower for word in ['любит', 'скуч', 'отношен']):
+            return "ОТНОШЕНИЯ", "💖" 
+        elif any(word in question_lower for word in ['работ', 'карьер']):
+            return "КАРЬЕРА", "🚀"
+        else:
+            return "ОБЩИЙ", "🔮"
+    
+    def make_decision(self, moon_sign, sun_sign, question_type):
+        good_signs = ['Телец', 'Рак', 'Весы', 'Стрелец']
+        if moon_sign in good_signs:
+            return "ДА ✅", "Звезды благоволят вашим намерениям!"
+        else:
+            return "НЕТ ❌", "Сейчас не лучшее время для активных действий"
+    
+    def generate_strategy(self, verdict, moon_sign, question_type):
+        if "ДА" in verdict:
+            return "Действуйте уверенно - звёзды на вашей стороне!"
+        else:
+            return "Проявите терпение - лучшее время впереди!"
+
+bot_brain = HoraryBrain()
+
+def get_moscow_time():
+    utc_time = datetime.utcnow()
+    moscow_time = utc_time + timedelta(hours=3)
+    return moscow_time.strftime('%H:%M, %d.%m.%Y')
+
+def get_russian_zodiac(eng_sign):
+    zodiac_map = {
+        'Aries': 'Овен', 'Taurus': 'Телец', 'Gemini': 'Близнецы',
+        'Cancer': 'Рак', 'Leo': 'Лев', 'Virgo': 'Дева',
+        'Libra': 'Весы', 'Scorpio': 'Скорпион', 'Sagittarius': 'Стрелец',
+        'Capricorn': 'Козерог', 'Aquarius': 'Водолей', 'Pisces': 'Рыбы'
+    }
+    return zodiac_map.get(eng_sign, eng_sign)
+
+# ОБРАБОТКА ГРУПП ← НОВЫЙ КОД
+@bot.message_handler(chat_types=['group', 'supergroup'])
+def handle_group_message(message):
+    if message.text and ('@HoraryEmperorBot' in message.text):
+        question = message.text.replace('@HoraryEmperorBot', '').strip()
+        if question:
+            # ПРОВЕРЯЕМ ЛЕГИТИМНОСТЬ
+            is_legitimate, legitimacy_message = bot_brain.analyze_question_legitimacy(question)
+            
+            if not is_legitimate:
+                bot.reply_to(message, legitimacy_message)
+                return
+            
+            # ЕСЛИ ВОПРОС ЛЕГИТИМЕН - АНАЛИЗ
+            analysis = get_detailed_analysis(question)
+            bot.reply_to(message, analysis)
+
+# ЛИЧНЫЕ СООБЩЕНИЯ ← ОБНОВЛЕННЫЙ КОД
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    if message.text.startswith('/'):
+        if message.text == '/start':
+            start_text = """
+🔮 Я — УМНЫЙ Хорарный Император!
+
+Я анализирую РЕАЛЬНЫЕ жизненные ситуации:
+• 💰 Финансы и карьера
+• 💖 Отношения и брак  
+• 🏥 Здоровье и решения
+• 🚀 Планы и проекты
+
+❗ Я НЕ отвечаю на:
+• Метеорологические вопросы
+• Вопросы с нарушением логики времени
+• Запросы на "чудеса без усилий"
+
+Задайте ОСМЫСЛЕННЫЙ вопрос о вашей жизни!
+"""
+            bot.reply_to(message, start_text)
+        return
+    
+    try:
+        # ПРОВЕРЯЕМ ЛЕГИТИМНОСТЬ ВОПРОСА
+        is_legitimate, legitimacy_message = bot_brain.analyze_question_legitimacy(message.text)
+        
+        if not is_legitimate:
+            bot.reply_to(message, legitimacy_message)
+            return
+        
+        # ЕСЛИ ВОПРОС ЛЕГИТИМЕН - ДЕЛАЕМ АНАЛИЗ
+        display_time = get_moscow_time()
+        
+        observer = ephem.Observer()
+        observer.lat = '55.7558'
+        observer.lon = '37.6173'
+        
+        moon = ephem.Moon()
+        sun = ephem.Sun()
+        moon.compute(observer)
+        sun.compute(observer)
+        
+        moon_sign = get_russian_zodiac(ephem.constellation(moon)[1])
+        sun_sign = get_russian_zodiac(ephem.constellation(sun)[1])
+        
+        question_type, emoji = bot_brain.analyze_question_type(message.text)
+        verdict, reasoning = bot_brain.make_decision(moon_sign, sun_sign, question_type)
+        strategy = bot_brain.generate_strategy(verdict, moon_sign, question_type)
+        
+        response = f"""
+🔮 УМНЫЙ ХОРАРНЫЙ АНАЛИЗ
+⏰ {display_time}, МОСКВА
+
+❓ ВОПРОС: {message.text}
+🎯 ТИП: {question_type} {emoji}
+
+📊 КАРТА:
+• 🌙 Луна: {moon_sign}
+• ☀️ Солнце: {sun_sign}
+
+⚡ ВЕРДИКТ: {verdict}
+💡 ОБОСНОВАНИЕ: {reasoning}
+
+💫 СТРАТЕГИЯ: {strategy}
+
+✅ Вопрос прошел проверку на реалистичность
+🤖 Уровень анализа: {bot_brain.experience + 1}
+"""
+        bot.reply_to(message, response)
+        
+    except Exception as e:
+        bot.reply_to(message, f"❌ Ошибка: {str(e)}")
+
+def get_detailed_analysis(question):
+    """Функция для анализа в группах"""
+    display_time = get_moscow_time()
+    
+    observer = ephem.Observer()
+    observer.lat = '55.7558'
+    observer.lon = '37.6173'
+    
+    moon = ephem.Moon()
+    sun = ephem.Sun()
+    moon.compute(observer)
+    sun.compute(observer)
+    
+    moon_sign = get_russian_zodiac(ephem.constellation(moon)[1])
+    sun_sign = get_russian_zodiac(ephem.constellation(sun)[1])
+    
+    question_type, emoji = bot_brain.analyze_question_type(question)
+    verdict, reasoning = bot_brain.make_decision(moon_sign, sun_sign, question_type)
+    strategy = bot_brain.generate_strategy(verdict, moon_sign, question_type)
+    
+    return f"""
+🔮 ГРУППОВОЙ АНАЛИЗ
+⏰ {display_time}
+
+❓ ВОПРОС: {question}
+🎯 ТИП: {question_type} {emoji}
+
+📊 КАРТА:
+• 🌙 Луна: {moon_sign}
+• ☀️ Солнце: {sun_sign}
+
+⚡ ВЕРДИКТ: {verdict}
+💡 ОБОСНОВАНИЕ: {reasoning}
+
+💫 СТРАТЕГИЯ: {strategy}
+"""
+
+print("🔄 УМНЫЙ бот с ДЕТЕКТОРОМ РЕАЛЬНОСТИ запущен...")
+while True:
+    try:
+        bot.polling(none_stop=True, interval=1)
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        time.sleep(5)
