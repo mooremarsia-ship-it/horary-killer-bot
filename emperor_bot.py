@@ -241,13 +241,85 @@ def get_random_zodiac():
              'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы']
     return random.choice(signs)
 
-# УМНАЯ ОБРАБОТКА ГРУПП
+# УМНАЯ ОБРАБОТКА ГРУПП С ВЫБОРОМ
 @bot.message_handler(chat_types=['supergroup', 'group'])
 def handle_group_message(message):
     try:
         if message.text:
             question = None
             
+            # ЕСЛИ ПРОСТО ОБРАЩЕНИЕ К БОТУ
+            if '@HoraryEmperorBot' in message.text:
+                bot_text = message.text.replace('@HoraryEmperorBot', '').strip()
+                
+                # Если просто обратились без вопроса
+                if not bot_text or len(bot_text) < 3:
+                    choice_text = """
+👑 Я понимаю, что некоторые вопросы бывают личными!
+
+📢 Выбери вариант:
+• Напиши вопрос здесь - ответ будет в группе  
+• Напиши "личное" и вопрос - отвечу в ЛС
+• Напиши мне в личку - полная конфиденциальность
+
+Что предпочитаешь? 💫
+                    """
+                    bot.reply_to(message, choice_text)
+                    return
+                
+                # Если вопрос с "личное"
+                if bot_text.lower().startswith('личное'):
+                    question = bot_text.replace('личное', '').strip()
+                    if question:
+                        try:
+                            analysis = get_detailed_analysis(question)
+                            private_msg = f"🔒 ЛИЧНЫЙ ОТВЕТ НА ТВОЙ ВОПРОС:\n\n{analysis}"
+                            bot.send_message(message.from_user.id, private_msg)
+                            bot.reply_to(message, "📨 Отправил ответ в твои личные сообщения!")
+                        except:
+                            bot.reply_to(message, "❌ Сначала напиши мне в личные сообщения!")
+                    return
+                else:
+                    # Обычный вопрос в группе
+                    question = bot_text
+            
+            # ЕСЛИ ПРОСТО "ИМПЕРАТОР" БЕЗ ВОПРОСА
+            elif message.text.lower() in ['император', 'бот', 'император?', 'бот?']:
+                choice_text = """
+🔮 Привет! Я Хорарный Император!
+
+💬 Можешь задать вопрос прямо здесь
+🔒 Или написать "Личное [вопрос]" для ответа в ЛС
+💌 Или написать мне в личные сообщения
+
+Что выберешь? ✨
+                """
+                bot.reply_to(message, choice_text)
+                return
+            
+            # ЕСЛИ ВОПРОС С "ЛИЧНОЕ"
+            elif message.text.lower().startswith('личное'):
+                question = message.text.replace('личное', '').strip()
+                if question:
+                    try:
+                        analysis = get_detailed_analysis(question)
+                        private_msg = f"🔒 ЛИЧНЫЙ ОТВЕТ:\n\n{analysis}"
+                        bot.send_message(message.from_user.id, private_msg)
+                        bot.reply_to(message, "📨 Отправил личный ответ в твои сообщения!")
+                    except:
+                        bot.reply_to(message, "💌 Напиши мне сначала в личные сообщения!")
+                return
+            
+            # ОБЫЧНЫЙ ВОПРОС В ГРУППЕ
+            elif '?' in message.text and len(message.text) > 10:
+                question = message.text.strip()
+            
+            if question and len(question) > 5:
+                analysis = get_detailed_analysis(question)
+                bot.reply_to(message, analysis)
+                
+    except Exception as e:
+        print(f"Ошибка в группе: {e}")
             # УМНЫЕ ТРИГГЕРЫ ДЛЯ ГРУПП
             if '@HoraryEmperorBot' in message.text:
                 question = message.text.replace('@HoraryEmperorBot', '').strip()
