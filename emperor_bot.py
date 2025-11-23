@@ -6,6 +6,30 @@ from datetime import datetime, timedelta
 BOT_TOKEN = "7166686748:AAFnyfjq5UsunijP_p8HQiYeKHh3qoAM5RA"
 bot = telebot.TeleBot(BOT_TOKEN)
 
+class HoraryBrain:
+    def __init__(self):
+        self.experience = 0
+        
+    def analyze_question_type(self, question):
+        question_lower = question.lower()
+        if any(word in question_lower for word in ['деньг', 'финанс', 'денег']):
+            return "ФИНАНСЫ", "💰"
+        elif any(word in question_lower for word in ['любит', 'скуч', 'отношен']):
+            return "ОТНОШЕНИЯ", "💖" 
+        elif any(word in question_lower for word in ['работ', 'карьер']):
+            return "КАРЬЕРА", "🚀"
+        else:
+            return "ОБЩИЙ", "🔮"
+    
+    def make_decision(self, moon_sign):
+        good_signs = ['Телец', 'Рак', 'Весы', 'Стрелец']
+        if moon_sign in good_signs:
+            return "ДА ✅", "Звезды благоволят вашим намерениям!"
+        else:
+            return "НЕТ ❌", "Сейчас не лучшее время для активных действий"
+
+bot_brain = HoraryBrain()
+
 def get_moscow_time():
     utc_time = datetime.utcnow()
     moscow_time = utc_time + timedelta(hours=3)
@@ -24,7 +48,7 @@ def get_russian_zodiac(eng_sign):
 def handle_message(message):
     if message.text.startswith('/'):
         if message.text == '/start':
-            bot.reply_to(message, "🔮 Я — Хорарный Император! Задай вопрос!")
+            bot.reply_to(message, "🔮 Я — УМНЫЙ Хорарный Император! Задай вопрос для анализа!")
         return
     
     try:
@@ -42,27 +66,33 @@ def handle_message(message):
         moon_sign = get_russian_zodiac(ephem.constellation(moon)[1])
         sun_sign = get_russian_zodiac(ephem.constellation(sun)[1])
         
+        question_type, emoji = bot_brain.analyze_question_type(message.text)
+        verdict, reasoning = bot_brain.make_decision(moon_sign)
+        
         response = f"""
-🔮 ХОРАРНЫЙ АНАЛИЗ
+🔮 УМНЫЙ ХОРАРНЫЙ АНАЛИЗ
 ⏰ {display_time}, МОСКВА
 
 ❓ ВОПРОС: {message.text}
+🎯 ТИП: {question_type} {emoji}
 
 📊 КАРТА:
 • 🌙 Луна: {moon_sign}
 • ☀️ Солнце: {sun_sign}
 
-⚡ ВЕРДИКТ: ДА ✅
-📖 Луна в {moon_sign} благоприятствует
+⚡ ВЕРДИКТ: {verdict}
+💡 ОБОСНОВАНИЕ: {reasoning}
 
-💫 Действуйте уверенно!
+💫 СТРАТЕГИЯ: {"Действуйте уверенно - звёзды на вашей стороне!" if "ДА" in verdict else "Проявите терпение - лучшее время впереди!"}
+
+🤖 Уровень анализа: {bot_brain.experience + 1}
 """
         bot.reply_to(message, response)
         
     except Exception as e:
         bot.reply_to(message, f"❌ Ошибка: {str(e)}")
 
-print("🔄 Бот запущен...")
+print("🔄 УМНЫЙ бот с мозгами запущен...")
 while True:
     try:
         bot.polling(none_stop=True, interval=1)
